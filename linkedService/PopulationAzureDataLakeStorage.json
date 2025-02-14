@@ -1,0 +1,12 @@
+{
+	"name": "PopulationAzureDataLakeStorage",
+	"type": "Microsoft.DataFactory/factories/linkedservices",
+	"properties": {
+		"annotations": [],
+		"type": "AzureBlobFS",
+		"typeProperties": {
+			"url": "https://covid19projectrahuldl.dfs.core.windows.net/",
+			"encryptedCredential": "ew0KICAiVmVyc2lvbiI6ICIyMDE3LTExLTMwIiwNCiAgIlByb3RlY3Rpb25Nb2RlIjogIktleSIsDQogICJTZWNyZXRDb250ZW50VHlwZSI6ICJQbGFpbnRleHQiLA0KICAiQ3JlZGVudGlhbElkIjogIkRBVEFGQUNUT1JZQDA5ODQyMUM3LUE0Q0UtNEVENC1BRjQ5LTE5QjFFNkE4MTM5RF8yODEyOTNmZC1jNmIwLTQ1M2YtYTFiOC03ZTFlOTIzODRmMTAiDQp9"
+		}
+	}
+}

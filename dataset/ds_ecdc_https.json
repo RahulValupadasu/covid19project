@@ -1,0 +1,44 @@
+{
+	"name": "ds_ecdc_https",
+	"properties": {
+		"linkedServiceName": {
+			"referenceName": "ls_ecdc_https",
+			"type": "LinkedServiceReference",
+			"parameters": {
+				"baseUrl": {
+					"value": "@dataset().baseUrl",
+					"type": "Expression"
+				},
+				"relativeURL": {
+					"value": "@dataset().relativeUrl",
+					"type": "Expression"
+				}
+			}
+		},
+		"parameters": {
+			"baseUrl": {
+				"type": "string"
+			},
+			"relativeUrl": {
+				"type": "string"
+			}
+		},
+		"annotations": [],
+		"type": "DelimitedText",
+		"typeProperties": {
+			"location": {
+				"type": "HttpServerLocation",
+				"relativeUrl": {
+					"value": "@dataset().relativeUrl",
+					"type": "Expression"
+				}
+			},
+			"columnDelimiter": ",",
+			"escapeChar": "\\",
+			"firstRowAsHeader": true,
+			"quoteChar": "\""
+		},
+		"schema": []
+	},
+	"type": "Microsoft.DataFactory/factories/datasets"
+}

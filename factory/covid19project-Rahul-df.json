@@ -1,0 +1,9 @@
+{
+	"name": "covid19project-Rahul-df",
+	"location": "canadacentral",
+	"identity": {
+		"type": "SystemAssigned",
+		"principalId": "bf806be9-9cb1-41b9-9c47-f04b3d69e255",
+		"tenantId": "c804c225-6278-4b35-a886-31d9e2edb215"
+	}
+}

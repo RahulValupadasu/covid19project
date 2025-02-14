@@ -1,0 +1,48 @@
+{
+	"name": "RCM_SG_Data_Set",
+	"properties": {
+		"linkedServiceName": {
+			"referenceName": "rcmSG_Linked_Service",
+			"type": "LinkedServiceReference"
+		},
+		"parameters": {
+			"conatiner_path": {
+				"type": "string"
+			},
+			"folder_path": {
+				"type": "string"
+			},
+			"file_name": {
+				"type": "string"
+			}
+		},
+		"folder": {
+			"name": "RCM"
+		},
+		"annotations": [],
+		"type": "DelimitedText",
+		"typeProperties": {
+			"location": {
+				"type": "AzureBlobFSLocation",
+				"fileName": {
+					"value": "@dataset().file_name",
+					"type": "Expression"
+				},
+				"folderPath": {
+					"value": "@dataset().folder_path",
+					"type": "Expression"
+				},
+				"fileSystem": {
+					"value": "@dataset().conatiner_path",
+					"type": "Expression"
+				}
+			},
+			"columnDelimiter": ",",
+			"escapeChar": "\\",
+			"firstRowAsHeader": true,
+			"quoteChar": "\""
+		},
+		"schema": []
+	},
+	"type": "Microsoft.DataFactory/factories/datasets"
+}

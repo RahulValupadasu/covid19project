@@ -1,0 +1,257 @@
+{
+	"name": "df_hospital_admission_transformation",
+	"properties": {
+		"type": "MappingDataFlow",
+		"typeProperties": {
+			"sources": [
+				{
+					"dataset": {
+						"referenceName": "ds_hospital_admission",
+						"type": "DatasetReference"
+					},
+					"name": "hospitalAdmissionSource"
+				},
+				{
+					"dataset": {
+						"referenceName": "ds_hospitalDim",
+						"type": "DatasetReference"
+					},
+					"name": "sourceHospitalDim"
+				},
+				{
+					"dataset": {
+						"referenceName": "ds_country_code_lookup_file",
+						"type": "DatasetReference"
+					},
+					"name": "sourceCountryCode"
+				}
+			],
+			"sinks": [
+				{
+					"dataset": {
+						"referenceName": "ds_hospital_daily_files",
+						"type": "DatasetReference"
+					},
+					"name": "DailyHospitalSink"
+				},
+				{
+					"dataset": {
+						"referenceName": "ds_hosptial_admission_transformed",
+						"type": "DatasetReference"
+					},
+					"name": "sink1"
+				}
+			],
+			"transformations": [
+				{
+					"name": "select1"
+				},
+				{
+					"name": "split1"
+				},
+				{
+					"name": "lookup1"
+				},
+				{
+					"name": "select2"
+				},
+				{
+					"name": "pivotDailyCounts"
+				},
+				{
+					"name": "pivotWeeklyCount"
+				},
+				{
+					"name": "select3"
+				},
+				{
+					"name": "select4"
+				},
+				{
+					"name": "derivedColumnYEARWEEK",
+					"description": "formated year_week column ( 2020-w19 to 202019), removed -w from all the year_week"
+				},
+				{
+					"name": "lookup2"
+				},
+				{
+					"name": "aggregate1"
+				}
+			],
+			"scriptLines": [
+				"source(output(",
+				"          country as string,",
+				"          indicator as string,",
+				"          date as date,",
+				"          year_week as string,",
+				"          value as double,",
+				"          source as string,",
+				"          url as string",
+				"     ),",
+				"     allowSchemaDrift: true,",
+				"     validateSchema: false,",
+				"     ignoreNoFilesFound: false) ~> hospitalAdmissionSource",
+				"source(output(",
+				"          date_key as date,",
+				"          date as date,",
+				"          year as short,",
+				"          month as short,",
+				"          day as short,",
+				"          day_name as string,",
+				"          day_of_year as short,",
+				"          week_of_month as short,",
+				"          week_of_year as short,",
+				"          month_name as string,",
+				"          year_month as integer,",
+				"          year_week as integer",
+				"     ),",
+				"     allowSchemaDrift: true,",
+				"     validateSchema: false,",
+				"     ignoreNoFilesFound: false) ~> sourceHospitalDim",
+				"source(output(",
+				"          country as string,",
+				"          country_code_2_digit as string,",
+				"          country_code_3_digit as string,",
+				"          continent as string,",
+				"          population as integer",
+				"     ),",
+				"     allowSchemaDrift: true,",
+				"     validateSchema: false,",
+				"     ignoreNoFilesFound: false) ~> sourceCountryCode",
+				"hospitalAdmissionSource select(mapColumn(",
+				"          country,",
+				"          indicator,",
+				"          date,",
+				"          year_week,",
+				"          value,",
+				"          source",
+				"     ),",
+				"     skipDuplicateMapInputs: false,",
+				"     skipDuplicateMapOutputs: false) ~> select1",
+				"select2 split(indicator=='Daily hospital occupancy' || indicator == 'Daily ICU occupancy',",
+				"     disjoint: false) ~> split1@(DailyStream, WeeklyStream)",
+				"select1, sourceCountryCode lookup(select1@country == sourceCountryCode@country,",
+				"     multiple: false,",
+				"     pickup: 'any',",
+				"     broadcast: 'auto')~> lookup1",
+				"lookup1 select(mapColumn(",
+				"          country = select1@country,",
+				"          indicator,",
+				"          date,",
+				"          year_week,",
+				"          value,",
+				"          source,",
+				"          country_code_2_digit,",
+				"          country_code_3_digit,",
+				"          population",
+				"     ),",
+				"     skipDuplicateMapInputs: false,",
+				"     skipDuplicateMapOutputs: false) ~> select2",
+				"split1@DailyStream pivot(groupBy(country,",
+				"          date,",
+				"          year_week,",
+				"          source,",
+				"          country_code_2_digit,",
+				"          country_code_3_digit,",
+				"          population),",
+				"     pivotBy(indicator, ['Daily hospital occupancy', 'Daily ICU occupancy']),",
+				"     count = sum(value),",
+				"     columnNaming: '$V_$N',",
+				"     lateral: true) ~> pivotDailyCounts",
+				"split1@WeeklyStream pivot(groupBy(country,",
+				"          date,",
+				"          year_week,",
+				"          source,",
+				"          country_code_2_digit,",
+				"          country_code_3_digit,",
+				"          population),",
+				"     pivotBy(indicator, ['Weekly new hospital admissions per 100k', 'Weekly new ICU admissions per 100k']),",
+				"     count = sum(value),",
+				"     columnNaming: '$V_$N',",
+				"     lateral: true) ~> pivotWeeklyCount",
+				"pivotDailyCounts select(mapColumn(",
+				"          country,",
+				"          reported_date = date,",
+				"          source,",
+				"          country_code_2_digit,",
+				"          country_code_3_digit,",
+				"          population,",
+				"          {Daily hospital occupancy_count},",
+				"          {Daily ICU occupancy_count}",
+				"     ),",
+				"     skipDuplicateMapInputs: false,",
+				"     skipDuplicateMapOutputs: false) ~> select3",
+				"lookup2 select(mapColumn(",
+				"          country,",
+				"          source,",
+				"          country_code_2_digit,",
+				"          country_code_3_digit,",
+				"          population,",
+				"          {Weekly new hospital admissions per 100k_count},",
+				"          {Weekly new ICU admissions per 100k_count},",
+				"          date_key,",
+				"          date = sourceHospitalDim@date,",
+				"          year,",
+				"          month,",
+				"          day,",
+				"          day_name,",
+				"          day_of_year,",
+				"          week_of_month,",
+				"          week_of_year,",
+				"          month_name,",
+				"          year_month,",
+				"          year_week = sourceHospitalDim@year_week",
+				"     ),",
+				"     skipDuplicateMapInputs: false,",
+				"     skipDuplicateMapOutputs: false) ~> select4",
+				"pivotWeeklyCount derive(year_week = toInteger(replace(year_week,\"-W\",\"\"))) ~> derivedColumnYEARWEEK",
+				"derivedColumnYEARWEEK, sourceHospitalDim lookup(derivedColumnYEARWEEK@year_week == sourceHospitalDim@year_week,",
+				"     multiple: true,",
+				"     broadcast: 'auto',",
+				"     pickup: 'any')~> lookup2",
+				"select4 aggregate(groupBy(country,",
+				"          source,",
+				"          country_code_2_digit,",
+				"          country_code_3_digit,",
+				"          population,",
+				"          {Weekly new hospital admissions per 100k_count},",
+				"          {Weekly new ICU admissions per 100k_count},",
+				"          year_week),",
+				"     reported_week_start_date = min(date),",
+				"          reported_week_end_date = max(date)) ~> aggregate1",
+				"select3 sink(allowSchemaDrift: true,",
+				"     validateSchema: false,",
+				"     input(",
+				"          country as string,",
+				"          population as string,",
+				"          reported_date as string,",
+				"          source as string,",
+				"          cases_count as string,",
+				"          deaths_count as string,",
+				"          country_code_2_digit as string,",
+				"          country_code_3_digit as string",
+				"     ),",
+				"     umask: 0022,",
+				"     preCommands: [],",
+				"     postCommands: []) ~> DailyHospitalSink",
+				"aggregate1 sink(allowSchemaDrift: true,",
+				"     validateSchema: false,",
+				"     input(",
+				"          country as string,",
+				"          population as string,",
+				"          reported_date as string,",
+				"          source as string,",
+				"          cases_count as string,",
+				"          deaths_count as string,",
+				"          country_code_2_digit as string,",
+				"          country_code_3_digit as string",
+				"     ),",
+				"     umask: 0022,",
+				"     preCommands: [],",
+				"     postCommands: [],",
+				"     skipDuplicateMapInputs: true,",
+				"     skipDuplicateMapOutputs: true) ~> sink1"
+			]
+		}
+	}
+}
